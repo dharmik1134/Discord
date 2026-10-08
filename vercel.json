@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "name": "nexus-party-voip",
+  "rewrites": [
+    { "source": "/api/signal", "destination": "/api/signal.js" },
+    { "source": "/api/signals", "destination": "/api/signal.js" }
+  ]
+}

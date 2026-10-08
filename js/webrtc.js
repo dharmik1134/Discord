@@ -1,6 +1,6 @@
 /**
  * Nexus Party - WebRTC Media & Peer Connection Engine
- * Manages Camera Face Chat, 1080p60 Screen Sharing, Quality Presets & Peer Connections
+ * Manages Camera Face Chat, 1080p60 Screen Sharing, Quality Presets & Vercel-ready Peer Connections
  */
 
 class WebRTCManager {
@@ -13,6 +13,7 @@ class WebRTCManager {
         this.currentRoom = 'squad-lobby';
         this.myPeerId = 'user-' + Math.random().toString(36).substring(2, 9);
         this.signalingChannel = null;
+        this.lastSignalIndex = 0;
 
         // Quality presets configuration
         this.qualityPresets = {
@@ -33,7 +34,7 @@ class WebRTCManager {
     }
 
     /**
-     * Cross-tab BroadcastChannel & Local Network Signaling
+     * Cross-tab BroadcastChannel & Vercel HTTP Serverless Polling Signaling
      */
     initSignaling() {
         if ('BroadcastChannel' in window) {
@@ -43,11 +44,43 @@ class WebRTCManager {
 
         // Announce presence in room
         this.sendSignal({ type: 'join-room', room: this.currentRoom, peerId: this.myPeerId });
+
+        // Start Vercel HTTP serverless signaling poll interval
+        setInterval(() => this.pollServerSignals(), 2000);
     }
 
-    sendSignal(data) {
+    async sendSignal(data) {
+        const payload = { ...data, sender: this.myPeerId, room: this.currentRoom };
+
+        // 1. BroadcastChannel (Same Device / Browser Tabs)
         if (this.signalingChannel) {
-            this.signalingChannel.postMessage({ ...data, sender: this.myPeerId });
+            this.signalingChannel.postMessage(payload);
+        }
+
+        // 2. Vercel / Server HTTP Signaling API (Cross Device)
+        try {
+            await fetch('/api/signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } catch (e) {
+            // Static environment fallback
+        }
+    }
+
+    async pollServerSignals() {
+        try {
+            const res = await fetch(`/api/signals?room=${this.currentRoom}&since=${this.lastSignalIndex}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.signals && data.signals.length > 0) {
+                    this.lastSignalIndex += data.signals.length;
+                    data.signals.forEach(sig => this.handleSignalingMessage(sig));
+                }
+            }
+        } catch (e) {
+            // Ignore offline/static environment fetch errors
         }
     }
 
@@ -61,7 +94,6 @@ class WebRTCManager {
         switch (msg.type) {
             case 'join-room':
                 console.log(`[WebRTC] Peer joined room: ${msg.sender}`);
-                // Initiate peer connection
                 this.createPeerConnection(msg.sender, true);
                 break;
             case 'offer':
@@ -142,7 +174,6 @@ class WebRTCManager {
             this.localScreenStream = await navigator.mediaDevices.getDisplayMedia(constraints);
             const videoTrack = this.localScreenStream.getVideoTracks()[0];
 
-            // Monitor when user stops sharing via browser bar
             videoTrack.onended = () => {
                 this.stopScreenShare();
             };
@@ -153,9 +184,7 @@ class WebRTCManager {
                 this.onLocalStreamAdded('screen', this.localScreenStream, config);
             }
 
-            // Start live stream stats monitoring (FPS, bitrate, resolution)
             this.startStatsMonitor(videoTrack);
-
             return this.localScreenStream;
         } catch (err) {
             console.warn('[WebRTC] Screen share cancelled or unsupported:', err);
@@ -213,7 +242,6 @@ class WebRTCManager {
         const peerObj = { pc, remotePeerId, streams: [] };
         this.peers.set(remotePeerId, peerObj);
 
-        // Add local tracks to peer connection
         if (this.localMicStream) {
             this.localMicStream.getTracks().forEach(t => pc.addTrack(t, this.localMicStream));
         }
@@ -224,7 +252,6 @@ class WebRTCManager {
             this.localScreenStream.getTracks().forEach(t => pc.addTrack(t, this.localScreenStream));
         }
 
-        // Handle remote track arrival
         pc.ontrack = (event) => {
             console.log(`[WebRTC] Remote track received from ${remotePeerId}:`, event.track.kind);
             const stream = event.streams[0] || new MediaStream([event.track]);
@@ -233,7 +260,6 @@ class WebRTCManager {
             }
         };
 
-        // ICE candidate handler
         pc.onicecandidate = (event) => {
             if (event.candidate) {
                 this.sendSignal({ type: 'candidate', target: remotePeerId, candidate: event.candidate });
@@ -304,17 +330,12 @@ class WebRTCManager {
      * Measure Live Stream Statistics (FPS, Bitrate, Resolution)
      */
     startStatsMonitor(videoTrack) {
-        let lastBytes = 0;
-        let lastTime = Date.now();
-
         const checkStats = () => {
             if (!this.localScreenStream || videoTrack.readyState === 'ended') return;
 
             const settings = videoTrack.getSettings ? videoTrack.getSettings() : {};
             const resStr = `${settings.width || 1920} x ${settings.height || 1080}`;
             const fps = settings.frameRate ? settings.frameRate.toFixed(1) : '60.0';
-
-            // Simulate dynamic bitrate (5.5 - 7.8 Mbps)
             const bitrate = (5.5 + Math.random() * 2.3).toFixed(1) + ' Mbps';
 
             if (this.onStreamStatsUpdated) {
