@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Party - Discord-Style 1080p60 Voice & Video Chat</title>
+    <meta name="description" content="High-performance Discord-like party voice chat, face camera chat, and ultra 1080p 60fps screen streaming built with WebRTC.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="theme-dark">
+    <div id="app-container" class="app-layout">
+        <!-- 1. SERVER SIDEBAR -->
+        <nav class="server-sidebar" aria-label="Servers">
+            <div class="server-icon home-btn active" data-tooltip="Direct Messages & Hub">
+                <i class="fa-solid fa-gamepad"></i>
+            </div>
+            <div class="sidebar-divider"></div>
+            <div class="server-list" id="server-list">
+                <div class="server-icon active-server" data-server-id="gaming-hub" data-tooltip="🎮 Apex Champions Club">
+                    <span>ACC</span>
+                    <span class="unread-badge">3</span>
+                </div>
+                <div class="server-icon" data-server-id="stream-lounge" data-tooltip="🎬 1080p60 Stream Cinema">
+                    <span>1080</span>
+                </div>
+                <div class="server-icon" data-server-id="chill-party" data-tooltip="🎧 Lofi & Chill Squad">
+                    <span>LCS</span>
+                </div>
+            </div>
+            <div class="server-icon add-server-btn" id="btn-add-server" data-tooltip="Add a Server / Join Party">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+            <div class="server-icon explore-btn" id="btn-explore" data-tooltip="Discover Parties">
+                <i class="fa-solid fa-compass"></i>
+            </div>
+        </nav>
+
+        <!-- 2. CHANNELS SIDEBAR -->
+        <aside class="channels-sidebar">
+            <!-- Server Header -->
+            <header class="server-header">
+                <h1 class="server-name" id="current-server-name">🎮 Apex Champions Club</h1>
+                <i class="fa-solid fa-chevron-down dropdown-icon"></i>
+            </header>
+
+            <!-- Channels Container -->
+            <div class="channels-container">
+                <!-- Text Channels Group -->
+                <div class="channel-category">
+                    <div class="category-header">
+                        <i class="fa-solid fa-chevron-down category-arrow"></i>
+                        <span>TEXT CHANNELS</span>
+                    </div>
+                    <ul class="channel-list">
+                        <li class="channel-item active" data-channel-type="text" data-channel-id="general">
+                            <i class="fa-solid fa-hashtag"></i>
+                            <span class="channel-name">general-chat</span>
+                        </li>
+                        <li class="channel-item" data-channel-type="text" data-channel-id="clips-and-highlights">
+                            <i class="fa-solid fa-hashtag"></i>
+                            <span class="channel-name">clips-and-highlights</span>
+                        </li>
+                        <li class="channel-item" data-channel-type="text" data-channel-id="setup-share">
+                            <i class="fa-solid fa-hashtag"></i>
+                            <span class="channel-name">setup-share</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Voice & Video Channels Group -->
+                <div class="channel-category">
+                    <div class="category-header">
+                        <i class="fa-solid fa-chevron-down category-arrow"></i>
+                        <span>VOICE & STREAMS</span>
+                    </div>
+                    <ul class="channel-list" id="voice-channels-list">
+                        <li class="channel-item voice-channel active-voice" data-channel-type="voice" data-channel-id="squad-lobby">
+                            <div class="voice-channel-header">
+                                <i class="fa-solid fa-volume-high voice-icon"></i>
+                                <span class="channel-name">Squad Lobby</span>
+                                <span class="hd-badge">1080p60</span>
+                            </div>
+                            <ul class="connected-users-list" id="voice-users-squad-lobby">
+                                <!-- Users rendered dynamically -->
+                            </ul>
+                        </li>
+
+                        <li class="channel-item voice-channel" data-channel-type="voice" data-channel-id="pro-stream-hd">
+                            <div class="voice-channel-header">
+                                <i class="fa-solid fa-display voice-icon"></i>
+                                <span class="channel-name">Pro Stream 1080p60</span>
+                                <span class="hd-badge live-glow">LIVE 60FPS</span>
+                            </div>
+                            <ul class="connected-users-list" id="voice-users-pro-stream-hd">
+                                <!-- Users rendered dynamically -->
+                            </ul>
+                        </li>
+
+                        <li class="channel-item voice-channel" data-channel-type="voice" data-channel-id="chill-lounge">
+                            <div class="voice-channel-header">
+                                <i class="fa-solid fa-headphones voice-icon"></i>
+                                <span class="channel-name">Chill Face & Voice</span>
+                            </div>
+                            <ul class="connected-users-list" id="voice-users-chill-lounge">
+                                <!-- Users rendered dynamically -->
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- User Status Footer -->
+            <div class="user-footer-panel">
+                <div class="user-avatar-wrapper" id="user-profile-trigger">
+                    <div class="avatar-img-placeholder" id="my-avatar">YOU</div>
+                    <span class="status-indicator online" id="my-status-dot"></span>
+                </div>
+                <div class="user-details">
+                    <div class="user-display-name" id="my-display-name">Alex (You)</div>
+                    <div class="user-status-text" id="my-status-text">Ready to Stream 1080p60</div>
+                </div>
+                <div class="user-quick-actions">
+                    <button class="action-icon-btn" id="btn-toggle-mic" data-tooltip="Mute Microphone">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                    <button class="action-icon-btn" id="btn-toggle-deafen" data-tooltip="Deafen Audio">
+                        <i class="fa-solid fa-headphones"></i>
+                    </button>
+                    <button class="action-icon-btn" id="btn-open-settings" data-tooltip="User & AV Settings">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 3. MAIN WORKSPACE / CHAT & STAGE -->
+        <main class="main-workspace">
+            <!-- Channel Header Bar -->
+            <header class="workspace-header">
+                <div class="channel-title-info">
+                    <i class="fa-solid fa-volume-high header-channel-icon" id="header-icon"></i>
+                    <h2 class="header-channel-name" id="header-name">Squad Lobby</h2>
+                    <span class="header-divider">|</span>
+                    <span class="header-topic" id="header-topic">1080p 60fps Party Video & Face Voice Chat Room</span>
+                </div>
+
+                <div class="header-actions">
+                    <!-- Audio Spectrum Toggle -->
+                    <button class="header-btn" id="btn-toggle-visualizer" data-tooltip="Audio Spectrum Visualizer">
+                        <i class="fa-solid fa-chart-simple"></i>
+                    </button>
+
+                    <!-- Stream Quality Preset Badge -->
+                    <div class="stream-preset-selector dropdown-wrapper">
+                        <button class="preset-pill-btn" id="preset-selector-btn">
+                            <span class="live-dot"></span>
+                            <span id="current-quality-label">1080p 60FPS</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-menu" id="quality-menu">
+                            <div class="menu-item" data-quality="1080p60">
+                                <span class="item-title">1080p 60 FPS</span>
+                                <span class="item-desc">Ultra Smooth HD Stream (Recommended)</span>
+                            </div>
+                            <div class="menu-item" data-quality="720p60">
+                                <span class="item-title">720p 60 FPS</span>
+                                <span class="item-desc">High Motion / Low Bandwidth</span>
+                            </div>
+                            <div class="menu-item" data-quality="1440p60">
+                                <span class="item-title">1440p 60 FPS</span>
+                                <span class="item-desc">2K QHD Gaming Stream</span>
+                            </div>
+                            <div class="menu-item" data-quality="4k30">
+                                <span class="item-title">4K 30 FPS</span>
+                                <span class="item-desc">Ultra HD Cinema Quality</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invite Party Link -->
+                    <button class="header-btn primary-btn" id="btn-invite-party">
+                        <i class="fa-solid fa-user-plus"></i> Invite Friends
+                    </button>
+
+                    <!-- Toggle Chat Panel -->
+                    <button class="header-btn" id="btn-toggle-text-drawer" data-tooltip="Toggle Text Chat Drawer">
+                        <i class="fa-solid fa-message"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Center Stage Grid & Media Area -->
+            <div class="workspace-body">
+                <div class="stage-container" id="stage-container">
+                    <!-- Audio Spectrum Canvas Overlay -->
+                    <canvas id="spectrum-canvas" class="spectrum-canvas hidden"></canvas>
+
+                    <!-- Video Grid Layout -->
+                    <div class="video-grid grid-layout-auto" id="video-grid">
+                        <!-- Dynamic Peer Video Tiles rendered here -->
+                    </div>
+
+                    <!-- Screen Share Spotlight View (Shown when someone shares screen) -->
+                    <div class="spotlight-container hidden" id="spotlight-container">
+                        <div class="spotlight-video-wrapper">
+                            <video id="spotlight-video" autoplay playsinline muted></video>
+                            <div class="stream-badge-overlay">
+                                <span class="badge-live"><i class="fa-solid fa-circle"></i> STREAMING LIVE</span>
+                                <span class="badge-fps" id="spotlight-fps-badge">1080p @ 60 FPS</span>
+                                <span class="badge-bitrate" id="spotlight-bitrate-badge">6.2 Mbps</span>
+                            </div>
+                            <div class="stream-controls-overlay">
+                                <button class="overlay-btn" id="btn-theater-mode" data-tooltip="Theater / Fullscreen">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
+                                <button class="overlay-btn" id="btn-popout-stream" data-tooltip="Picture in Picture">
+                                    <i class="fa-solid fa-up-right-from-square"></i>
+                                </button>
+                                <button class="overlay-btn danger" id="btn-stop-spotlight-stream">
+                                    <i class="fa-solid fa-xmark"></i> Stop Viewing
+                                </button>
+                            </div>
+                        </div>
+                        <div class="spotlight-strip" id="spotlight-tiles-strip">
+                            <!-- Floating face cams when screen stream is active -->
+                        </div>
+                    </div>
+
+                    <!-- Stage Control Dock Floating Bar -->
+                    <div class="stage-control-dock">
+                        <button class="dock-btn mic-btn" id="dock-btn-mic" data-tooltip="Microphone (M)">
+                            <i class="fa-solid fa-microphone"></i>
+                            <span>Mic</span>
+                        </button>
+                        <button class="dock-btn deafen-btn" id="dock-btn-deafen" data-tooltip="Deafen Audio (D)">
+                            <i class="fa-solid fa-headphones"></i>
+                            <span>Deafen</span>
+                        </button>
+                        <button class="dock-btn camera-btn" id="dock-btn-camera" data-tooltip="Toggle Face Camera (V)">
+                            <i class="fa-solid fa-video"></i>
+                            <span>Face Cam</span>
+                        </button>
+                        <button class="dock-btn share-btn highlighted" id="dock-btn-share" data-tooltip="Share Screen at 1080p 60fps (S)">
+                            <i class="fa-solid fa-desktop"></i>
+                            <span class="hd-accent">Share 1080p60</span>
+                        </button>
+                        <button class="dock-btn soundboard-btn" id="dock-btn-soundboard" data-tooltip="Party Soundboard (B)">
+                            <i class="fa-solid fa-icons"></i>
+                            <span>Soundboard</span>
+                        </button>
+                        <button class="dock-btn disconnect-btn" id="dock-btn-disconnect" data-tooltip="Disconnect Voice">
+                            <i class="fa-solid fa-phone-slash"></i>
+                            <span>Leave</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Side Text Chat Panel -->
+                <aside class="chat-drawer" id="chat-drawer">
+                    <div class="chat-header">
+                        <h3><i class="fa-solid fa-hashtag"></i> <span id="chat-channel-title">general-chat</span></h3>
+                        <div class="chat-header-actions">
+                            <button class="icon-subtle" id="btn-clear-chat" data-tooltip="Clear Chat"><i class="fa-solid fa-trash-can"></i></button>
+                            <button class="icon-subtle" id="btn-close-chat"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Messages Log -->
+                    <div class="messages-container" id="messages-container">
+                        <div class="chat-welcome-notice">
+                            <div class="welcome-icon"><i class="fa-solid fa-comments"></i></div>
+                            <h4>Welcome to #general-chat!</h4>
+                            <p>This is the start of the channel. Test text chat, emojis, party reactions, and 1080p 60fps video streams!</p>
+                        </div>
+                        <!-- Messages dynamically rendered here -->
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div class="typing-indicator hidden" id="typing-indicator">
+                        <span class="dots"><span>.</span><span>.</span><span>.</span></span>
+                        <span id="typing-username">CyberGamer_99</span> is typing...
+                    </div>
+
+                    <!-- Chat Input Box -->
+                    <div class="chat-input-wrapper">
+                        <div class="chat-input-container">
+                            <button class="chat-attach-btn" id="btn-attach" data-tooltip="Send Reaction / Gif"><i class="fa-solid fa-circle-plus"></i></button>
+                            <input type="text" id="chat-input" placeholder="Message #general-chat... (Press Enter to send)" autocomplete="off">
+                            <button class="emoji-picker-btn" id="btn-emoji-trigger"><i class="fa-solid fa-face-smile"></i></button>
+                        </div>
+
+                        <!-- Quick Reaction Bar -->
+                        <div class="quick-reactions-bar">
+                            <button class="q-emoji-btn" data-emoji="🔥">🔥</button>
+                            <button class="q-emoji-btn" data-emoji="🚀">🚀</button>
+                            <button class="q-emoji-btn" data-emoji="😂">😂</button>
+                            <button class="q-emoji-btn" data-emoji="GG">🎮 GG</button>
+                            <button class="q-emoji-btn" data-emoji="1080p60">⚡ 1080p60</button>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </main>
+    </div>
+
+    <!-- SOUNDBOARD POPUP DRAWER -->
+    <div class="soundboard-drawer hidden" id="soundboard-drawer">
+        <div class="soundboard-header">
+            <h4><i class="fa-solid fa-bullhorn"></i> Party Soundboard & SFX</h4>
+            <button class="icon-subtle" id="btn-close-soundboard"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="soundboard-grid">
+            <button class="sfx-card" data-sfx="airhorn">
+                <span class="sfx-emoji">📢</span>
+                <span class="sfx-name">Airhorn</span>
+            </button>
+            <button class="sfx-card" data-sfx="applause">
+                <span class="sfx-emoji">👏</span>
+                <span class="sfx-name">Applause</span>
+            </button>
+            <button class="sfx-card" data-sfx="victory">
+                <span class="sfx-emoji">🎺</span>
+                <span class="sfx-name">Victory Fanfare</span>
+            </button>
+            <button class="sfx-card" data-sfx="laugh">
+                <span class="sfx-emoji">🤣</span>
+                <span class="sfx-name">Sitcom Laugh</span>
+            </button>
+            <button class="sfx-card" data-sfx="gg">
+                <span class="sfx-emoji">🎮</span>
+                <span class="sfx-name">GG Sound</span>
+            </button>
+            <button class="sfx-card" data-sfx="drum">
+                <span class="sfx-emoji">🥁</span>
+                <span class="sfx-name">Rimshot</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal-overlay hidden" id="modal-settings">
+        <div class="modal-card settings-modal">
+            <header class="modal-header">
+                <h3><i class="fa-solid fa-sliders"></i> Voice & Video Settings</h3>
+                <button class="icon-subtle modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="modal-body">
+                <!-- Tabs -->
+                <div class="settings-tabs">
+                    <button class="tab-btn active" data-tab="tab-av">Audio & Video</button>
+                    <button class="tab-btn" data-tab="tab-stream">1080p60 Quality</button>
+                    <button class="tab-btn" data-tab="tab-profile">User Profile</button>
+                </div>
+
+                <!-- Tab content 1: AV -->
+                <div class="tab-content active" id="tab-av">
+                    <div class="form-group">
+                        <label for="select-mic"><i class="fa-solid fa-microphone"></i> Input Device (Microphone)</label>
+                        <select id="select-mic" class="form-select"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="select-cam"><i class="fa-solid fa-video"></i> Camera Device (Face Chat)</label>
+                        <select id="select-cam" class="form-select"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-wave-square"></i> Active Speaker Sensitivity</label>
+                        <div class="slider-row">
+                            <input type="range" id="mic-sensitivity" min="1" max="100" value="25">
+                            <span id="sensitivity-value">25%</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group toggle-group">
+                        <div>
+                            <div class="toggle-title">AI Noise Suppression</div>
+                            <div class="toggle-desc">Filter background keyboard clacks and fan noise</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-noise-suppression" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <div class="form-group toggle-group">
+                        <div>
+                            <div class="toggle-title">Echo Cancellation & Gain Control</div>
+                            <div class="toggle-desc">Prevent feedback loop during high volume party chat</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-echo-cancel" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Tab content 2: Stream Quality -->
+                <div class="tab-content" id="tab-stream">
+                    <div class="stream-preset-cards">
+                        <div class="preset-card selected" data-preset="1080p60">
+                            <div class="preset-header">
+                                <span class="badge-tag gold">PRO GAMER</span>
+                                <h4>1080p @ 60 FPS</h4>
+                            </div>
+                            <p>Full 1920x1080 resolution at silky 60 frames per second. Ideal for fast-paced FPS & action gaming.</p>
+                            <div class="preset-specs">Bitrate: 6.0 - 8.0 Mbps • Smoothness: 60Hz</div>
+                        </div>
+
+                        <div class="preset-card" data-preset="720p60">
+                            <div class="preset-header">
+                                <span class="badge-tag">BALANCED</span>
+                                <h4>720p @ 60 FPS</h4>
+                            </div>
+                            <p>High fluidity 60fps stream tuned for lower bandwidth connections.</p>
+                            <div class="preset-specs">Bitrate: 3.5 Mbps • Smoothness: 60Hz</div>
+                        </div>
+
+                        <div class="preset-card" data-preset="1440p60">
+                            <div class="preset-header">
+                                <span class="badge-tag purple">ULTRA 2K</span>
+                                <h4>1440p @ 60 FPS</h4>
+                            </div>
+                            <p>2560x1440 resolution stream for high-end monitor screen sharing.</p>
+                            <div class="preset-specs">Bitrate: 12.0 Mbps • Smoothness: 60Hz</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab content 3: User Profile -->
+                <div class="tab-content" id="tab-profile">
+                    <div class="form-group">
+                        <label for="input-display-name">Display Name</label>
+                        <input type="text" id="input-display-name" class="form-input" value="Alex Gamer">
+                    </div>
+                    <div class="form-group">
+                        <label for="input-avatar-color">Avatar Accent Color</label>
+                        <input type="color" id="input-avatar-color" class="form-color-picker" value="#5865F2">
+                    </div>
+                    <div class="form-group">
+                        <label for="select-status">Online Status</label>
+                        <select id="select-status" class="form-select">
+                            <option value="online">🟢 Online (Ready for Party)</option>
+                            <option value="idle">🌙 Idle</option>
+                            <option value="dnd">🔴 Do Not Disturb</option>
+                            <option value="invisible">⚪ Invisible</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <footer class="modal-footer">
+                <button class="btn btn-secondary modal-close-btn">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-settings">Save Changes</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- INVITE MODAL -->
+    <div class="modal-overlay hidden" id="modal-invite">
+        <div class="modal-card invite-modal">
+            <header class="modal-header">
+                <h3><i class="fa-solid fa-user-plus"></i> Invite Friends to Party Voice</h3>
+                <button class="icon-subtle modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="modal-body">
+                <p>Share this WebRTC Room Party link with your friends to join this 1080p60 voice & video stream channel instantly:</p>
+                <div class="invite-link-box">
+                    <input type="text" id="invite-url-input" readonly value="http://localhost:8000/#room=squad-lobby">
+                    <button class="btn btn-primary" id="btn-copy-invite"><i class="fa-solid fa-copy"></i> Copy</button>
+                </div>
+                <div class="invite-tip">
+                    <i class="fa-solid fa-circle-info"></i> Direct peer-to-peer WebRTC connection handles 1080p 60fps stream & audio automatically.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="js/audio.js"></script>
+    <script src="js/webrtc.js"></script>
+    <script src="js/bots.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
